@@ -35,6 +35,10 @@ function parseFlags(argv: string[]): Flags {
     else if (a === "--app") flags.app = next()!;
     else if (a === "--fail-on-gap") flags.failOnGap = true;
   }
+  // Resolve --cwd against the process cwd exactly once, up front, so every
+  // other flag (--catalog, --report, --out) composes against an absolute
+  // base instead of two independently-relative paths.
+  flags.cwd = resolve(process.cwd(), flags.cwd);
   return flags;
 }
 

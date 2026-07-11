@@ -98,3 +98,21 @@ npx playwright test --reporter=json > playwright-report.json
 npx qa coverage --catalog qa/catalog \
   --report vitest-report.json --report playwright-report.json
 ```
+
+## `--cwd`, `--catalog`, and `--report` — how paths compose
+
+`--cwd` sets the base directory (default: the directory the command is run
+from). `--catalog` and `--report` are then resolved **relative to `--cwd`**,
+not relative to wherever the process happened to start. This matters when
+a package script runs from a subdirectory (e.g. an npm script in
+`src/web/package.json` for a monorepo rooted one level up):
+
+```jsonc
+// src/web/package.json — cwd at run time is src/web/
+"qa:coverage": "qa coverage --cwd ../.. --catalog qa/catalog --report src/web/vitest-report.json"
+```
+
+`--cwd ../..` resolves to the repo root; `--catalog qa/catalog` and the
+`--report` path are then both relative to that root — **not** to `src/web`
+a second time.
+
