@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Read(./**)",
+      "Bash(ls *)",
+      "Bash(cat status/*)",
+      "Bash(cat memory/*)",
+      "Bash(tail storage/audit.jsonl)",
+      "Bash(tail -n * storage/audit.jsonl)",
+      "Bash(jq * storage/audit.jsonl)"
+    ],
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(./secrets/**)",
+      "Read(./credentials.json)",
+      "Read(./token.json)",
+      "Read(./*.pem)",
+      "Read(./*.key)",
+      "Bash(rm -rf *)",
+      "Bash(git push --force *)",
+      "Bash(git push -f *)"
+    ]
+  }
+}

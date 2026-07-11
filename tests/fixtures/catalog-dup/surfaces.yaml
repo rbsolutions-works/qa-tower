@@ -1,0 +1,4 @@
+- id: SUR-001
+  route: /a
+- id: SUR-001
+  route: /b

@@ -1,0 +1,13 @@
+- id: ACT-001
+  name: create_package
+  kind: rpc
+  roles: { sg_office: allow, regional_driver: deny }
+  source: [migrations/001_init.sql]
+  status: gap
+
+- id: ACT-002
+  name: handover_to_line
+  kind: rpc
+  roles: { regional_driver: allow }
+  status: covered
+  specs: [tests/rpc/onward.test.ts]

@@ -1,0 +1,40 @@
+# Claude Code — personal/experimental overrides
+.claude/settings.local.json
+
+# Secrets — never commit
+.env
+.env.*
+!.env.example
+credentials.json
+token.json
+*.pem
+*.key
+secrets/
+
+# Audit log — locally maintained, not for sharing
+storage/audit.jsonl
+
+# OS
+.DS_Store
+*~
+*.bak
+*.swp
+
+# Temp / scratch
+.tmp/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Node
+node_modules/
+dist/
+build/
+*.tsbuildinfo
+
+# qa-tower artifacts
+qa-verdict.html
+qa-verdict.json

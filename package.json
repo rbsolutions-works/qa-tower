@@ -1,0 +1,41 @@
+{
+  "name": "qa-tower",
+  "version": "0.1.0",
+  "description": "Scenario-catalog QA engine: coverage accounting, source-drift detection, db-guard, and a single QA-verdict report",
+  "type": "module",
+  "license": "UNLICENSED",
+  "private": false,
+  "engines": {
+    "node": ">=20"
+  },
+  "bin": {
+    "qa": "dist/cli.js"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "docs"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "prepare": "npm run build",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "yaml": "^2.8.0",
+    "zod": "^3.25.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.8.0",
+    "vitest": "^3.2.0"
+  }
+}

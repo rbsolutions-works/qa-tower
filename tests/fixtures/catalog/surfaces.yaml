@@ -1,0 +1,12 @@
+- id: SUR-001
+  route: /dashboard
+  roles: { admin: allow, sg_office: allow, regional_driver: deny }
+  source: [app/dashboard/page.tsx]
+  status: gap
+
+- id: SUR-002
+  route: /admin/onward
+  roles: { admin: allow, regional_driver: deny }
+  source: [app/admin/onward/page.tsx]
+  status: waived
+  waived_reason: covered manually pending Phase 3 e2e spec
