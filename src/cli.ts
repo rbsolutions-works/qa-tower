@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { writeFileSync } from "node:fs";
+import { writeFileSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { loadCatalog, CatalogError } from "./catalog/load.js";
 import { parseReportFile, ReportError, type TestResult } from "./coverage/reports.js";
@@ -64,8 +64,17 @@ function cmdValidate(flags: Flags): void {
 function loadResults(flags: Flags): TestResult[] {
   const results: TestResult[] = [];
   for (const r of flags.reports) {
+    const path = resolve(flags.cwd, r);
+    // A missing report just means that layer hasn't run yet — coverage
+    // should be usable incrementally (e.g. unit tests ran, e2e didn't).
+    // A report that EXISTS but fails to parse is a real problem and still
+    // hard-fails below.
+    if (!existsSync(path)) {
+      console.error(`qa: skipping --report ${r} (not found — that test layer hasn't run yet)`);
+      continue;
+    }
     try {
-      results.push(...parseReportFile(resolve(flags.cwd, r)));
+      results.push(...parseReportFile(path));
     } catch (e) {
       if (e instanceof ReportError) fail(e.message);
       throw e;
