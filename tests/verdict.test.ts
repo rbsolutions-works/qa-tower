@@ -51,4 +51,23 @@ describe("renderVerdictHtml", () => {
     expect(html).toContain("SUR-001");
     expect(html).not.toContain("<script"); // no external/inline scripts needed
   });
+
+  it("renders the dashboard chrome: hero %, per-category bars, and a gaps section", () => {
+    const coverage = computeCoverage(makeCatalog(), []); // SUR-001 is a gap
+    const html = renderVerdictHtml({ appName: "Demo", coverage, drift: [] });
+    expect(html).toContain('class="hero"');
+    expect(html).toContain('class="bar"'); // per-category coverage bar
+    expect(html).toContain("Coverage by category");
+    expect(html).toContain("Gaps to close");
+    expect(html).toContain("prefers-color-scheme"); // theme-aware
+    expect(html).toContain("viewport"); // responsive
+  });
+
+  it("celebrates when there are no gaps", () => {
+    const coverage = computeCoverage(makeCatalog(), [
+      { title: "[SUR-001]", status: "passed", report: "r.json" },
+    ]);
+    const html = renderVerdictHtml({ appName: "Demo", coverage, drift: [] });
+    expect(html).toContain("every catalogued item is covered");
+  });
 });
