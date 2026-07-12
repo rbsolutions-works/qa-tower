@@ -69,7 +69,7 @@ describe("qa upload", () => {
   });
 
   it("POSTs the verdict with bearer token + commit/branch headers", async () => {
-    const received: { auth?: string; commit?: string; branch?: string; body?: string; path?: string } = {};
+    const received: { auth?: string; commit?: string; branch?: string; repo?: string; body?: string; path?: string } = {};
     const server: Server = createServer((req, res) => {
       let data = "";
       req.on("data", (c) => (data += c));
@@ -78,6 +78,7 @@ describe("qa upload", () => {
         received.auth = req.headers["authorization"] as string;
         received.commit = req.headers["x-qa-commit"] as string;
         received.branch = req.headers["x-qa-branch"] as string;
+        received.repo = req.headers["x-qa-repo"] as string;
         received.body = data;
         res.writeHead(201, { "content-type": "application/json" });
         res.end(JSON.stringify({ ok: true, runId: 7 }));
@@ -87,7 +88,7 @@ describe("qa upload", () => {
     const port = (server.address() as { port: number }).port;
 
     const r = await runCli(
-      ["upload", "--endpoint", `http://localhost:${port}`, "--token", "sekret", "--commit", "abc1234", "--branch", "master"],
+      ["upload", "--endpoint", `http://localhost:${port}`, "--token", "sekret", "--commit", "abc1234", "--branch", "master", "--repo", "acme/app"],
       tmpWithVerdict(),
     );
     await new Promise<void>((r) => server.close(() => r()));
@@ -98,6 +99,7 @@ describe("qa upload", () => {
     expect(received.auth).toBe("Bearer sekret");
     expect(received.commit).toBe("abc1234");
     expect(received.branch).toBe("master");
+    expect(received.repo).toBe("acme/app");
     expect(JSON.parse(received.body!).appName).toBe("demo");
   });
 

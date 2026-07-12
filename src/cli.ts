@@ -18,6 +18,7 @@ interface Flags {
   token: string;
   commit: string;
   branch: string;
+  repo: string;
 }
 
 function parseFlags(argv: string[]): Flags {
@@ -34,6 +35,7 @@ function parseFlags(argv: string[]): Flags {
     token: process.env.QA_TOWER_TOKEN ?? "",
     commit: process.env.GITHUB_SHA ?? "",
     branch: process.env.GITHUB_REF_NAME ?? "",
+    repo: process.env.GITHUB_REPOSITORY ?? "",
   };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
@@ -48,6 +50,7 @@ function parseFlags(argv: string[]): Flags {
     else if (a === "--token") flags.token = next()!;
     else if (a === "--commit") flags.commit = next()!;
     else if (a === "--branch") flags.branch = next()!;
+    else if (a === "--repo") flags.repo = next()!;
   }
   // Resolve --cwd against the process cwd exactly once, up front, so every
   // other flag (--catalog, --report, --out) composes against an absolute
@@ -198,6 +201,7 @@ async function cmdUpload(flags: Flags): Promise<void> {
   };
   if (flags.commit) headers["X-QA-Commit"] = flags.commit;
   if (flags.branch) headers["X-QA-Branch"] = flags.branch;
+  if (flags.repo) headers["X-QA-Repo"] = flags.repo;
 
   let res: Response;
   try {
@@ -229,7 +233,7 @@ async function main(): Promise<void> {
       console.log(
         `usage: qa <validate|coverage|drift|verdict|upload> [--catalog dir] [--report file]... ` +
           `[--cwd dir] [--out prefix] [--app name] [--fail-on-gap] ` +
-          `[--endpoint url] [--token t] [--commit sha] [--branch name]`,
+          `[--endpoint url] [--token t] [--commit sha] [--branch name] [--repo owner/name]`,
       );
       process.exit(cmd ? 1 : 0);
   }
