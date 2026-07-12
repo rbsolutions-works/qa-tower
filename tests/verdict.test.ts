@@ -80,3 +80,33 @@ describe("renderVerdictHtml", () => {
     expect(html).toContain("every catalogued item is covered");
   });
 });
+
+describe("declared (the re-triage backlog)", () => {
+  /** A catalog whose ACT-001 is DECLARED covered (has a spec) but never executed. */
+  function catalogWithDeclared(): Catalog {
+    const surfaces = [
+      { id: "SUR-001", route: "/a", roles: {}, source: [], status: "gap" as const, specs: [] },
+    ];
+    const actions = [
+      { id: "ACT-001", name: "do_thing", source: [], status: "covered" as const, specs: ["some/spec.ts"] },
+    ];
+    const byId = new Map();
+    for (const e of [...surfaces, ...actions]) byId.set(e.id, e);
+    return { surfaces, actions, flows: [], fingerprints: [], byId } as unknown as Catalog;
+  }
+
+  it("lists entries declared covered that no test executes", () => {
+    const coverage = computeCoverage(catalogWithDeclared(), [
+      { title: "loads [SUR-001]", status: "passed", report: "r.json" },
+    ]);
+    const v = buildVerdictJson({ appName: "test-app", coverage, drift: [] });
+
+    // ACT-001 is `status: covered` with a spec but NO executing test.
+    expect(coverage.overall.coveredBySpec).toBe(1);
+    expect(v.declared.map((d) => d.id)).toEqual(["ACT-001"]);
+
+    // It is NOT a gap — that is exactly the trap: it silently counts as covered.
+    expect(v.gaps.map((g) => g.id)).not.toContain("ACT-001");
+    expect(v.overall.coveredPct).toBeGreaterThan(v.overall.testedPct);
+  });
+});

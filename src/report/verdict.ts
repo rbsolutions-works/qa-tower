@@ -21,6 +21,12 @@ export interface VerdictJson {
   byCategory: CoverageResult["byCategory"];
   /** Every untested catalog id, so consumers can list the exact gaps to close. */
   gaps: VerdictGap[];
+  /**
+   * Entries DECLARED covered in the catalog (status: covered + a spec ref) that
+   * NO test actually executes. These inflate `coveredPct` and are the real
+   * re-triage backlog: either tag/write the test, or mark the entry a gap.
+   */
+  declared: VerdictGap[];
   totalTests: number;
   unknownTagCount: number;
   driftedCount: number;
@@ -36,6 +42,9 @@ export function buildVerdictJson(input: VerdictInput): VerdictJson {
     byCategory: input.coverage.byCategory,
     gaps: input.coverage.entries
       .filter((e) => e.state === "gap")
+      .map((e) => ({ id: e.id, label: e.label, category: e.category })),
+    declared: input.coverage.entries
+      .filter((e) => e.state === "covered-by-spec")
       .map((e) => ({ id: e.id, label: e.label, category: e.category })),
     totalTests: input.coverage.totalTests,
     unknownTagCount: input.coverage.unknownTags.length,
