@@ -18,6 +18,14 @@ describe("buildVerdictJson", () => {
     const v = buildVerdictJson({ appName: "test-app", coverage, drift: [] });
     expect(v.ok).toBe(false);
     expect(v.appName).toBe("test-app");
+    // Every untested id is listed in gaps, with the fields consumers render.
+    expect(v.gaps.length).toBe(v.overall.gap);
+    expect(v.gaps.length).toBeGreaterThan(0);
+    for (const g of v.gaps) {
+      expect(g.id).toBeTruthy();
+      expect(g.label).toBeTruthy();
+      expect(["surfaces", "actions", "flows"]).toContain(g.category);
+    }
   });
 
   it("is ok:true when everything is tested and nothing drifted", () => {
@@ -26,6 +34,7 @@ describe("buildVerdictJson", () => {
     ]);
     const v = buildVerdictJson({ appName: "test-app", coverage, drift: [] });
     expect(v.ok).toBe(true);
+    expect(v.gaps).toEqual([]);
   });
 
   it("is ok:false when a fingerprinted file has drifted", () => {

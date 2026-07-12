@@ -8,11 +8,19 @@ export interface VerdictInput {
   drift: DriftResult[];
 }
 
+export interface VerdictGap {
+  id: string;
+  label: string;
+  category: "surfaces" | "actions" | "flows";
+}
+
 export interface VerdictJson {
   appName: string;
   generatedAt: string;
   overall: CoverageResult["overall"];
   byCategory: CoverageResult["byCategory"];
+  /** Every untested catalog id, so consumers can list the exact gaps to close. */
+  gaps: VerdictGap[];
   totalTests: number;
   unknownTagCount: number;
   driftedCount: number;
@@ -26,6 +34,9 @@ export function buildVerdictJson(input: VerdictInput): VerdictJson {
     generatedAt: (input.generatedAt ?? new Date()).toISOString(),
     overall: input.coverage.overall,
     byCategory: input.coverage.byCategory,
+    gaps: input.coverage.entries
+      .filter((e) => e.state === "gap")
+      .map((e) => ({ id: e.id, label: e.label, category: e.category })),
     totalTests: input.coverage.totalTests,
     unknownTagCount: input.coverage.unknownTags.length,
     driftedCount,
