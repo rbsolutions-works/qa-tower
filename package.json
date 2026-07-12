@@ -1,6 +1,6 @@
 {
   "name": "qa-tower",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Scenario-catalog QA engine: coverage accounting, source-drift detection, db-guard, and a single QA-verdict report",
   "type": "module",
   "license": "UNLICENSED",

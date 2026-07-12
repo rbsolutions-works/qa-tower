@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { writeFileSync, existsSync } from "node:fs";
+import { writeFileSync, existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { loadCatalog, CatalogError } from "./catalog/load.js";
 import { parseReportFile, ReportError, type TestResult } from "./coverage/reports.js";
@@ -14,6 +14,10 @@ interface Flags {
   out: string;
   app: string;
   failOnGap: boolean;
+  endpoint: string;
+  token: string;
+  commit: string;
+  branch: string;
 }
 
 function parseFlags(argv: string[]): Flags {
@@ -24,6 +28,12 @@ function parseFlags(argv: string[]): Flags {
     out: "qa-verdict",
     app: "app",
     failOnGap: false,
+    // Upload target/credentials default to env so CI can set them as
+    // secrets without putting them on the command line.
+    endpoint: process.env.QA_TOWER_CLOUD_URL ?? "",
+    token: process.env.QA_TOWER_TOKEN ?? "",
+    commit: process.env.GITHUB_SHA ?? "",
+    branch: process.env.GITHUB_REF_NAME ?? "",
   };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
@@ -34,6 +44,10 @@ function parseFlags(argv: string[]): Flags {
     else if (a === "--out") flags.out = next()!;
     else if (a === "--app") flags.app = next()!;
     else if (a === "--fail-on-gap") flags.failOnGap = true;
+    else if (a === "--endpoint") flags.endpoint = next()!;
+    else if (a === "--token") flags.token = next()!;
+    else if (a === "--commit") flags.commit = next()!;
+    else if (a === "--branch") flags.branch = next()!;
   }
   // Resolve --cwd against the process cwd exactly once, up front, so every
   // other flag (--catalog, --report, --out) composes against an absolute
@@ -164,7 +178,34 @@ function cmdVerdict(flags: Flags): void {
   if (!json.ok) process.exit(1);
 }
 
-function main(): void {
+async function cmdUpload(flags: Flags): Promise<void> {
+  if (!flags.endpoint) fail("upload: no endpoint (set --endpoint or QA_TOWER_CLOUD_URL)");
+  if (!flags.token) fail("upload: no token (set --token or QA_TOWER_TOKEN)");
+
+  const path = resolve(flags.cwd, `${flags.out}.json`);
+  if (!existsSync(path)) fail(`upload: ${flags.out}.json not found — run 'qa verdict' first`);
+  const body = readFileSync(path, "utf8");
+
+  const url = `${flags.endpoint.replace(/\/+$/, "")}/api/v1/runs`;
+  const headers: Record<string, string> = {
+    Authorization: `Bearer ${flags.token}`,
+    "Content-Type": "application/json",
+  };
+  if (flags.commit) headers["X-QA-Commit"] = flags.commit;
+  if (flags.branch) headers["X-QA-Branch"] = flags.branch;
+
+  let res: Response;
+  try {
+    res = await fetch(url, { method: "POST", headers, body });
+  } catch (e) {
+    fail(`upload: request failed — ${(e as Error).message}`);
+  }
+  const text = await res.text();
+  if (!res.ok) fail(`upload: ${res.status} ${res.statusText} — ${text}`);
+  console.log(`qa upload: ${res.status} — ${text}`);
+}
+
+async function main(): Promise<void> {
   const [cmd, ...rest] = process.argv.slice(2);
   const flags = parseFlags(rest);
 
@@ -177,9 +218,13 @@ function main(): void {
       return cmdDrift(flags);
     case "verdict":
       return cmdVerdict(flags);
+    case "upload":
+      return cmdUpload(flags);
     default:
       console.log(
-        `usage: qa <validate|coverage|drift|verdict> [--catalog dir] [--report file]... [--cwd dir] [--out prefix] [--app name] [--fail-on-gap]`,
+        `usage: qa <validate|coverage|drift|verdict|upload> [--catalog dir] [--report file]... ` +
+          `[--cwd dir] [--out prefix] [--app name] [--fail-on-gap] ` +
+          `[--endpoint url] [--token t] [--commit sha] [--branch name]`,
       );
       process.exit(cmd ? 1 : 0);
   }
