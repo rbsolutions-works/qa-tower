@@ -182,7 +182,12 @@ async function cmdUpload(flags: Flags): Promise<void> {
   if (!flags.endpoint) fail("upload: no endpoint (set --endpoint or QA_TOWER_CLOUD_URL)");
   if (!flags.token) fail("upload: no token (set --token or QA_TOWER_TOKEN)");
 
-  const path = resolve(flags.cwd, `${flags.out}.json`);
+  // Resolve --out against process.cwd(), NOT --cwd, to match exactly where
+  // `qa verdict` wrote the file: cmdVerdict does writeFileSync(`${out}.json`),
+  // which Node resolves against process.cwd(). --cwd only scopes the catalog
+  // and reports. Resolving against --cwd here would look in the wrong place
+  // whenever --out and --cwd are both relative (e.g. UCE's src/web + ../..).
+  const path = resolve(process.cwd(), `${flags.out}.json`);
   if (!existsSync(path)) fail(`upload: ${flags.out}.json not found — run 'qa verdict' first`);
   const body = readFileSync(path, "utf8");
 

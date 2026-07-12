@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll } from "vitest";
 import { spawn } from "node:child_process";
 import { createServer, type Server } from "node:http";
-import { mkdtempSync, writeFileSync, existsSync } from "node:fs";
+import { mkdtempSync, mkdirSync, writeFileSync, existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -114,5 +114,38 @@ describe("qa upload", () => {
 
     expect(r.status).toBe(1);
     expect(r.stderr).toContain("401");
+  });
+
+  it("finds the verdict written by `qa verdict` when --out and --cwd are both relative (UCE layout)", async () => {
+    // Mirrors UCE CI: run from repo-root/src/web with `--cwd ../.. --out
+    // ../../qa-verdict`. `qa verdict` writes the file relative to cwd
+    // (repo root); upload must resolve --out the same way, not against --cwd.
+    const root = mkdtempSync(join(tmpdir(), "qa-upload-uce-"));
+    const web = join(root, "src", "web");
+    mkdirSync(web, { recursive: true });
+    writeFileSync(join(root, "qa-verdict.json"), JSON.stringify(sampleVerdict));
+
+    let gotBody = "";
+    const server: Server = createServer((req, res) => {
+      let data = "";
+      req.on("data", (c) => (data += c));
+      req.on("end", () => {
+        gotBody = data;
+        res.writeHead(201, { "content-type": "application/json" });
+        res.end(JSON.stringify({ ok: true, runId: 1 }));
+      });
+    });
+    await new Promise<void>((r) => server.listen(0, r));
+    const port = (server.address() as { port: number }).port;
+
+    const r = await runCli(
+      ["upload", "--cwd", "../..", "--out", "../../qa-verdict", "--endpoint", `http://localhost:${port}`, "--token", "t"],
+      web,
+    );
+    await new Promise<void>((r) => server.close(() => r()));
+
+    expect(r.stderr).toBe("");
+    expect(r.status).toBe(0);
+    expect(JSON.parse(gotBody).appName).toBe("demo");
   });
 });
