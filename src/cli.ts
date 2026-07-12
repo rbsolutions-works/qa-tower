@@ -105,13 +105,22 @@ function cmdCoverage(flags: Flags): void {
   const results = loadResults(flags);
   const coverage = computeCoverage(catalog, results);
 
+  // Headline is TEST-PROVEN coverage. `coveredPct` also counts covered-by-spec
+  // (declared in the catalog, no executing test), so it is not a guarantee.
   for (const [cat, s] of Object.entries(coverage.byCategory)) {
     console.log(
-      `${cat.padEnd(10)} ${s.coveredPct.toFixed(1).padStart(5)}%  ` +
-        `tested=${s.tested} spec=${s.coveredBySpec} failing=${s.failing} gap=${s.gap} waived=${s.waived}`,
+      `${cat.padEnd(10)} ${s.testedPct.toFixed(1).padStart(5)}% proven  ` +
+        `tested=${s.tested} declared=${s.coveredBySpec} failing=${s.failing} gap=${s.gap} waived=${s.waived}`,
     );
   }
-  console.log(`overall    ${coverage.overall.coveredPct.toFixed(1).padStart(5)}%  total=${coverage.overall.total}`);
+  const ov = coverage.overall;
+  console.log(`overall    ${ov.testedPct.toFixed(1).padStart(5)}% proven  total=${ov.total}`);
+  if (ov.coveredBySpec > 0) {
+    console.log(
+      `\nwarning: ${ov.coveredBySpec} of ${ov.total} entries are marked 'covered' in the catalog but no test\n` +
+        `executes them. They count toward coveredPct (${ov.coveredPct.toFixed(1)}%) — declared is not proven.`,
+    );
+  }
 
   if (coverage.unknownTags.length > 0) {
     console.log(`\n${coverage.unknownTags.length} test title(s) reference unknown catalog ids:`);

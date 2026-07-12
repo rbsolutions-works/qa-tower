@@ -75,3 +75,22 @@ describe("computeCoverage", () => {
     expect(cov.overall.coveredPct).toBeCloseTo(66.7, 1);
   });
 });
+
+describe("testedPct — declared is not proven", () => {
+  it("excludes covered-by-spec from the proven number (the UCE trap)", () => {
+    // ACT-001 is `status: covered` with a spec reference but NO executing test.
+    // qa-tower counts it toward coveredPct — it must NOT count toward testedPct.
+    const coverage = computeCoverage(makeCatalog(), [
+      { title: "loads [SUR-001]", status: "passed", report: "r.json" },
+    ]);
+    const o = coverage.overall;
+
+    expect(o.coveredBySpec).toBeGreaterThan(0); // declared, never executed
+    expect(o.tested).toBe(1); // only SUR-001 actually ran
+
+    // coveredPct is inflated by the declaration; testedPct is not.
+    expect(o.coveredPct).toBeGreaterThan(o.testedPct);
+    const denom = o.total - o.waived;
+    expect(o.testedPct).toBeCloseTo((o.tested / denom) * 100, 1);
+  });
+});

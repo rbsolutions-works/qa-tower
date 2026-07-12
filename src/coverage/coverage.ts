@@ -28,8 +28,16 @@ export interface CategorySummary {
   coveredBySpec: number;
   waived: number;
   gap: number;
-  /** (tested + failing? no — tested + covered-by-spec) / (total - waived), 0-100. */
+  /**
+   * "Not-a-gap" percentage: counts tested + covered-by-spec (+ waived).
+   * WARNING: `covered-by-spec` entries are DECLARED covered in the catalog
+   * with no executing test, so this is NOT a coverage guarantee. A catalog
+   * that marks everything `covered` reads 100% here while nothing runs.
+   * Prefer `testedPct` as the headline.
+   */
   coveredPct: number;
+  /** TEST-PROVEN coverage: tested / total, 0-100. Only what a test executes. */
+  testedPct: number;
 }
 
 export interface CoverageResult {
@@ -56,6 +64,7 @@ function summarize(entries: EntryCoverage[]): CategorySummary {
     waived: 0,
     gap: 0,
     coveredPct: 0,
+    testedPct: 0,
   };
   for (const e of entries) {
     if (e.state === "tested") s.tested++;
@@ -66,6 +75,9 @@ function summarize(entries: EntryCoverage[]): CategorySummary {
   }
   const denom = s.total - s.waived;
   s.coveredPct = denom === 0 ? 100 : Math.round(((s.tested + s.coveredBySpec) / denom) * 1000) / 10;
+  // TEST-PROVEN: only entries an actual test executes. `covered-by-spec` is a
+  // catalog declaration, not evidence, so it is deliberately excluded.
+  s.testedPct = denom === 0 ? 100 : Math.round((s.tested / denom) * 1000) / 10;
   return s;
 }
 

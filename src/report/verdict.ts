@@ -71,13 +71,17 @@ const CAT_LABEL: Record<Cat, string> = {
   flows: "Flows (journeys)",
 };
 
-/** A horizontal stacked coverage bar: covered (green) / gap (amber) / waived (grey). */
+/**
+ * A horizontal stacked bar. `tested` (green) is the only segment that means
+ * PROVEN; `covered-by-spec` gets its own colour because it is a catalog
+ * declaration with no executing test — painting it green would be a lie.
+ */
 function coverageBar(s: CoverageResult["overall"]): string {
-  const covered = s.tested + s.coveredBySpec;
   const total = s.total || 1;
   const pct = (n: number) => `${(n / total) * 100}%`;
-  return `<div class="bar" role="img" aria-label="${covered} covered, ${s.failing} failing, ${s.gap} gaps, ${s.waived} waived of ${s.total}">
-    <span class="seg ok" style="width:${pct(covered)}"></span>
+  return `<div class="bar" role="img" aria-label="${s.tested} tested, ${s.coveredBySpec} declared-untested, ${s.failing} failing, ${s.gap} gaps, ${s.waived} waived of ${s.total}">
+    <span class="seg ok" style="width:${pct(s.tested)}"></span>
+    <span class="seg spec" style="width:${pct(s.coveredBySpec)}"></span>
     <span class="seg fail" style="width:${pct(s.failing)}"></span>
     <span class="seg gap" style="width:${pct(s.gap)}"></span>
     <span class="seg waived" style="width:${pct(s.waived)}"></span>
@@ -85,15 +89,15 @@ function coverageBar(s: CoverageResult["overall"]): string {
 }
 
 function categoryCard(cat: Cat, s: CoverageResult["overall"]): string {
-  const covered = s.tested + s.coveredBySpec;
   return `<div class="cat">
     <div class="cat-head">
       <span class="cat-name">${CAT_LABEL[cat]}</span>
-      <span class="cat-pct">${s.coveredPct}%</span>
+      <span class="cat-pct">${s.testedPct}%</span>
     </div>
     ${coverageBar(s)}
     <div class="cat-legend">
-      <span><b>${covered}</b> covered</span>
+      <span><b>${s.tested}</b> tested</span>
+      ${s.coveredBySpec ? `<span class="t-spec"><b>${s.coveredBySpec}</b> declared</span>` : ""}
       ${s.failing ? `<span class="t-fail"><b>${s.failing}</b> failing</span>` : ""}
       <span class="t-gap"><b>${s.gap}</b> gap</span>
       ${s.waived ? `<span class="t-waived"><b>${s.waived}</b> waived</span>` : ""}
@@ -170,7 +174,8 @@ export function renderVerdictHtml(input: VerdictInput): string {
     .join("\n");
 
   const o = coverage.overall;
-  const coveredTotal = o.tested + o.coveredBySpec;
+  // A run is only PROVEN when nothing is merely declared covered.
+  const proven = v.ok && o.coveredBySpec === 0;
 
   return `<!doctype html>
 <html lang="en">
@@ -181,7 +186,7 @@ export function renderVerdictHtml(input: VerdictInput): string {
 <style>
   :root {
     --bg:#f7f8fa; --card:#ffffff; --ink:#1a1d21; --muted:#6b7280; --line:#e5e7eb;
-    --ok:#16a34a; --fail:#dc2626; --gap:#d97706; --waived:#9ca3af; --accent:#2563eb;
+    --ok:#16a34a; --fail:#dc2626; --gap:#d97706; --waived:#9ca3af; --accent:#2563eb; --spec:#94a3b8;
   }
   @media (prefers-color-scheme: dark) {
     :root { --bg:#0f1216; --card:#171b21; --ink:#e7eaee; --muted:#9aa4b2; --line:#2a2f37; }
@@ -206,6 +211,11 @@ export function renderVerdictHtml(input: VerdictInput): string {
   .pill { font-weight: 700; padding: .35rem .8rem; border-radius: 999px; font-size: .9rem; }
   .pill.pass { background: color-mix(in srgb, var(--ok) 16%, transparent); color: var(--ok); }
   .pill.fail { background: color-mix(in srgb, var(--gap) 18%, transparent); color: var(--gap); }
+  .warn-declared { background: color-mix(in srgb, var(--gap) 10%, transparent); border: 1px solid color-mix(in srgb, var(--gap) 30%, transparent);
+    border-radius: 10px; padding: .8rem 1rem; font-size: .88rem; line-height: 1.5; margin: 1rem 0; }
+  .warn-declared code { font-family: ui-monospace, Menlo, monospace; }
+  .seg.spec { background: var(--spec); }
+  .t-spec { color: var(--spec); }
   .hero .stats { display: flex; gap: 1.5rem; margin-left: auto; flex-wrap: wrap; }
   .hero .stats .n { font-size: 1.4rem; font-weight: 700; display: block; }
   .hero .stats .l { font-size: .72rem; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
@@ -259,17 +269,25 @@ export function renderVerdictHtml(input: VerdictInput): string {
 
   <div class="hero">
     <div>
-      <div class="big">${o.coveredPct}<small>%</small></div>
-      <div class="meta">${coveredTotal} of ${o.total} catalogued items covered</div>
+      <div class="big">${o.testedPct}<small>%</small></div>
+      <div class="meta">${o.tested} of ${o.total} catalogued items <strong>executed by a real test</strong></div>
     </div>
-    <span class="pill ${v.ok ? "pass" : "fail"}">${v.ok ? "✓ PASS" : "✗ WORK REMAINING"}</span>
+    <span class="pill ${proven ? "pass" : "fail"}">${proven ? "✓ PASS" : o.coveredBySpec > 0 ? "✗ UNPROVEN" : "✗ WORK REMAINING"}</span>
     <div class="stats">
       <div><span class="n">${v.totalTests}</span><span class="l">tests run</span></div>
+      <div><span class="n ${o.coveredBySpec ? "bad" : ""}">${o.coveredBySpec}</span><span class="l">declared, untested</span></div>
       <div><span class="n ${o.failing ? "bad" : ""}">${o.failing}</span><span class="l">failing</span></div>
-      <div><span class="n ${o.gap ? "" : ""}">${o.gap}</span><span class="l">gaps</span></div>
+      <div><span class="n">${o.gap}</span><span class="l">gaps</span></div>
       <div><span class="n ${v.driftedCount ? "bad" : ""}">${v.driftedCount}</span><span class="l">drifted</span></div>
     </div>
   </div>
+  ${
+    o.coveredBySpec > 0
+      ? `<p class="warn-declared"><strong>${o.coveredBySpec} of ${o.total} entries are marked <code>covered</code> in the catalog but no test executes them.</strong>
+         They count toward the legacy <code>coveredPct</code> (${o.coveredPct}%) — which is why that number is not a coverage guarantee.
+         Declared is not proven.</p>`
+      : ""
+  }
 
   <h2>Coverage by category</h2>
   <div class="cats">
