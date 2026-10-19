@@ -4,6 +4,8 @@ You are working inside the **qa-tower** project, coordinated by Andie
 (`/Users/rbatitis/Claude/Andie/`). Andie's global operating contract
 still applies; this file adds the project specifics.
 
+Andie's contract (`~/.claude/CLAUDE.md`, `~/.claude/rules/`) applies and is not restated here.
+
 ## Project Identity
 
 - **What it is:** A reusable, typed-TypeScript application-testing
@@ -36,19 +38,9 @@ content (catalog YAML, deny-listed DB refs, test suites) lives in the
 consumer repo. If a change needs app knowledge, it belongs in the
 consumer.
 
-## Guardrails (inherited from Andie — non-negotiable)
+## Project-specific safety
 
-1. **Read context first.** Load
-   `/Users/rbatitis/Obsidian-Vault/50-Memory/Projects/qa-tower/status/NEXT_ACTION.md`,
-   `.../status/BUILD_STATUS.md`, and this file before acting.
-2. **Confirm before destructive or outbound operations.** Deletes,
-   force-pushes, publishes, releases — show what will change, wait for
-   explicit "yes".
-3. **Persist state at end of meaningful work** to the vault paths below.
-4. **Ask when uncertain.**
-5. **Log significant decisions** →
-   `.../50-Memory/Projects/qa-tower/memory/decisions.md`; side-effectful
-   ops → `storage/audit.jsonl`.
+- Publishing or releasing the engine is an outbound action (needs Randell's yes).
 
 ## Project state location
 
