@@ -1,7 +1,7 @@
 # QA Tower — Operating Contract
 
 You are working inside the **qa-tower** project, coordinated by Andie
-(`/Users/rbatitis/Claude/Andie/`). Andie's global operating contract
+(`~/Claude/Andie/`). Andie's global operating contract
 still applies; this file adds the project specifics.
 
 Andie's contract (`~/.claude/CLAUDE.md`, `~/.claude/rules/`) applies and is not restated here.
@@ -44,7 +44,7 @@ consumer.
 
 ## Project state location
 
-`/Users/rbatitis/Obsidian-Vault/50-Memory/Projects/qa-tower/`
+`~/Obsidian-Vault/50-Memory/Projects/qa-tower/`
 (`status/` + `memory/`). The project folder holds code and design docs
 only.
 

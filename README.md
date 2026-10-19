@@ -36,7 +36,7 @@ scripts/          Deterministic scripts
 ```
 
 Project state (`status/`, `memory/`) lives in the vault at
-`/Users/rbatitis/Obsidian-Vault/50-Memory/Projects/qa-tower/`.
+`~/Obsidian-Vault/50-Memory/Projects/qa-tower/`.
 
 ## Consuming qa-tower
 
